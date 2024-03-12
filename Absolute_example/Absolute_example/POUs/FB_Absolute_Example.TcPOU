@@ -1,0 +1,244 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="FB_Absolute_Example" Id="{f486185f-5703-4886-844e-fd9f963ca55d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Absolute_Example
+VAR_INPUT
+	bEnable		:BOOL;
+	fPosition1	:LREAL;
+	fPosition2	:LREAL;
+	fPosition3	:LREAL;
+	tDelay		:TIME;	
+	fVelocity	:LREAL;
+	
+END_VAR
+VAR_OUTPUT
+	bError		:BOOL;
+	sStatus		:STRING;
+END_VAR
+
+VAR
+	fb_Power		: MC_Power;
+	stateDataFlow	: (RESET_STATE, FIRST_MOVE_STATE, FIRST_MOTION_CONTROL_STATE, FIRST_WAIT_STATE, 
+SECOND_MOVE_STATE, SECOND_MOTION_CONTROL_STATE, SECOND_WAIT_STATE, THIRD_MOVE_STATE,THIRD_MOTION_CONTROL_STATE,THIRD_WAIT_STATE, ERROR_STATE):=RESET_STATE;
+	fbTimer			:TON;	
+	fb_MoveAbsolute: MC_MoveAbsolute;
+END_VAR
+VAR_IN_OUT
+	Axis :		AXIS_REF;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+fbTimer(PT:=tDelay);
+
+CASE stateDataFlow OF
+	
+RESET_STATE:
+		bError			:=FALSE;
+		sStatus			:='Beklemede';
+		
+		IF bEnable THEN
+			stateDataFlow:=FIRST_MOVE_STATE;
+			ELSIF NOT Axis.Status.Operational THEN
+				stateDataFlow:=ERROR_STATE;
+				sStatus:='Enable değil';
+		END_IF
+	fb_Power(
+	Axis:= Axis, 
+	Enable:=bEnable , 
+	Enable_Positive:= bEnable, 
+	Enable_Negative:=bEnable , 
+	Override:=100 ,);
+	
+
+FIRST_MOVE_STATE:
+	
+	fb_MoveAbsolute.Position:=fPosition1;
+	fb_MoveAbsolute.Execute 	:= TRUE;
+	IF Axis.Status.Moving THEN 
+		stateDataFlow:=FIRST_MOTION_CONTROL_STATE;
+		sStatus:= '1. Noktaya gidiyor';
+		ELSIF Axis.Status.Error OR fb_MoveAbsolute.Error THEN
+		
+		sStatus		:='1. noktaya giderken hataya geçti'	;
+		stateDataFlow:=ERROR_STATE;
+		
+	END_IF 
+	
+FIRST_MOTION_CONTROL_STATE:
+	IF fb_MoveAbsolute.Done THEN 
+			stateDataFlow:=FIRST_WAIT_STATE;
+			fb_MoveAbsolute.Execute:=FALSE;
+		END_IF
+	
+FIRST_WAIT_STATE:
+
+		fbTimer.IN:=TRUE;
+		sStatus		:='1. noktada bekliyor ';
+		
+		IF fbTimer.Q THEN 
+			fbTimer.IN:=FALSE;
+			stateDataFlow:=SECOND_MOVE_STATE;
+		END_IF	
+		
+SECOND_MOVE_STATE	:
+
+	fb_MoveAbsolute.Position:=fPosition2;
+	fVelocity:=fVelocity/2;
+			fb_MoveAbsolute.Execute 	:= TRUE;
+			IF Axis.Status.Moving THEN 
+				
+				stateDataFlow:=SECOND_MOTION_CONTROL_STATE;
+				sStatus:= '2. Noktaya gidiyor';
+				ELSIF Axis.Status.Error OR fb_MoveAbsolute.Error THEN
+				
+				sStatus		:='2. noktaya giderken hataya geçti';
+				stateDataFlow:=ERROR_STATE;
+			END_IF
+
+SECOND_MOTION_CONTROL_STATE:
+			
+		IF fb_MoveAbsolute.Done THEN
+			stateDataFlow := SECOND_WAIT_STATE;
+			fb_MoveAbsolute.Execute:=FALSE;
+			 
+		END_IF
+		
+SECOND_WAIT_STATE:
+	fbTimer.IN:=TRUE;
+		
+		sStatus		:='2. noktada bekliyor ';
+		
+		IF fbTimer.Q THEN 
+			fbTimer.IN:=FALSE;
+			stateDataFlow:=THIRD_MOVE_STATE;
+		END_IF
+
+		
+		
+		
+THIRD_MOVE_STATE	:	
+
+	fb_MoveAbsolute.Position:=fposition3;
+	
+			fb_MoveAbsolute.Execute 	:= TRUE;
+			IF Axis.Status.Moving THEN 
+				
+				stateDataFlow:=THIRD_MOTION_CONTROL_STATE;
+				sStatus:= '3. Noktaya gidiyor';
+				ELSIF Axis.Status.Error OR fb_MoveAbsolute.Error THEN
+				
+				sStatus		:='3. noktaya giderken hataya geçti';
+				stateDataFlow:=ERROR_STATE;
+			END_IF
+
+			
+THIRD_MOTION_CONTROL_STATE:
+	
+	IF fb_MoveAbsolute.Done THEN
+			stateDataFlow := THIRD_WAIT_STATE;
+			fb_MoveAbsolute.Execute:=FALSE;
+			 
+		END_IF
+
+				
+THIRD_WAIT_STATE:
+	fbTimer.IN:=TRUE;
+		sStatus		:='3. noktada bekliyor ';
+		
+		IF fbTimer.Q THEN 
+			fbTimer.IN:=FALSE;
+			stateDataFlow:=RESET_STATE;
+		END_IF
+
+		
+ERROR_STATE:
+	bError :=FALSE;
+		
+		IF NOT bEnable THEN
+			fbTimer(IN:= FALSE);
+			stateDataFlow:=RESET_STATE;
+		END_IF
+
+	END_CASE
+
+fb_MoveAbsolute(
+	Axis:= Axis, 
+	Velocity:=fVelocity ,);
+	Axis.ReadStatus();
+	
+	]]></ST>
+    </Implementation>
+    <LineIds Name="FB_Absolute_Example">
+      <LineId Id="63" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="65" Count="1" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="107" Count="0" />
+      <LineId Id="147" Count="0" />
+      <LineId Id="108" Count="6" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="121" Count="5" />
+      <LineId Id="102" Count="0" />
+      <LineId Id="133" Count="0" />
+      <LineId Id="103" Count="0" />
+      <LineId Id="145" Count="0" />
+      <LineId Id="135" Count="9" />
+      <LineId Id="134" Count="0" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="159" Count="0" />
+      <LineId Id="149" Count="2" />
+      <LineId Id="148" Count="0" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="100" Count="0" />
+      <LineId Id="162" Count="6" />
+      <LineId Id="161" Count="0" />
+      <LineId Id="171" Count="0" />
+      <LineId Id="101" Count="0" />
+      <LineId Id="173" Count="1" />
+      <LineId Id="278" Count="0" />
+      <LineId Id="175" Count="1" />
+      <LineId Id="259" Count="0" />
+      <LineId Id="177" Count="5" />
+      <LineId Id="172" Count="0" />
+      <LineId Id="183" Count="0" />
+      <LineId Id="170" Count="0" />
+      <LineId Id="185" Count="4" />
+      <LineId Id="184" Count="0" />
+      <LineId Id="190" Count="1" />
+      <LineId Id="193" Count="0" />
+      <LineId Id="277" Count="0" />
+      <LineId Id="194" Count="4" />
+      <LineId Id="192" Count="0" />
+      <LineId Id="239" Count="0" />
+      <LineId Id="238" Count="0" />
+      <LineId Id="240" Count="2" />
+      <LineId Id="244" Count="0" />
+      <LineId Id="246" Count="0" />
+      <LineId Id="279" Count="0" />
+      <LineId Id="247" Count="1" />
+      <LineId Id="276" Count="0" />
+      <LineId Id="249" Count="5" />
+      <LineId Id="245" Count="0" />
+      <LineId Id="255" Count="0" />
+      <LineId Id="243" Count="0" />
+      <LineId Id="256" Count="0" />
+      <LineId Id="260" Count="0" />
+      <LineId Id="262" Count="3" />
+      <LineId Id="261" Count="0" />
+      <LineId Id="266" Count="8" />
+      <LineId Id="258" Count="0" />
+      <LineId Id="275" Count="0" />
+      <LineId Id="257" Count="0" />
+      <LineId Id="200" Count="0" />
+      <LineId Id="202" Count="4" />
+      <LineId Id="201" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="72" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="207" Count="2" />
+      <LineId Id="41" Count="0" />
+      <LineId Id="61" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

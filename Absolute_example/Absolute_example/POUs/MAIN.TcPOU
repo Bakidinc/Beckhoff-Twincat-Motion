@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{785e37b4-1199-4605-b604-bae944d0423f}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	axis_1:		AXIS_REF;
+	FBEnable: MC_Power;
+	bEnable : BOOL;
+	FBAbsolute: MC_MoveAbsolute;
+	bAbsolute : BOOL;
+	
+	fb_absolute_Example    : FB_Absolute_Example;
+	Axis1: AXIS_REF;
+	fPosition1:		 LREAL;
+	fPosition2:		 LREAL;
+	fPosition3		:LREAL;
+	tDelay: 		 TIME;
+	fVelocity:		 LREAL;
+	bError:			 BOOL;
+	sStatus:		 STRING;
+	
+	bBool			:BOOL;
+	bBool1: INT;
+	fb_Reset: MC_Reset;
+	
+	
+   
+    bBoool	:		BOOL;
+	position	:	LREAL;
+	mode		:	BOOL;
+	options		:ST_SetPositionOptions;
+	fb_SetPosition: MC_SetPosition;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+fb_absolute_Example(
+	bEnable:=bEnable , 
+	fPosition1:= fPosition1, 
+	fPosition2:=fPosition2 , 
+	fPosition3:= fPosition3, 
+	tDelay:= tDelay, 
+	fVelocity:= fVelocity, 
+	bError=>bError , 
+	sStatus=>sStatus , 
+	Axis:=axis_1 );
+	
+
+	
+	]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="32" Count="10" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="44" Count="0" />
+      <LineId Id="48" Count="1" />
+      <LineId Id="45" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
